@@ -1,68 +1,42 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import { Telegraf, Markup } from 'telegraf'
-import { getUserInfo, login as loginReq, getEventListBySearch } from './requests.js';
+import { Telegraf, Markup } from 'telegraf';
+import { getUserInfo, login as loginReq, getEventListBySearch } from './requests/requests.js';
 import jwt_decode from 'jwt-decode';
+
+import { log, errorHandler } from './helpers/index.js'
+import { userMiddleware } from './middlewares/index.js'
+import { startCommand } from './commands/index.js'
+import { loginHandler, betHandler } from './handlers/index.js'
+
+import LocalSession from 'telegraf-session-local';
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
-const usersInfo = { };
-
-bot.start((ctx) => {
-  ctx.reply(`Для начала работы вам необходимо авторизоваться`);
+const localSession = new LocalSession({
+  storage: LocalSession.storageMemory
 });
 
-bot.command('login', async (ctx) => {
-  const getCredentials = (text) => ctx.update.message.text.split(' ');
+// property session
+bot.use(localSession.middleware())
 
-  const [_, login, password] = getCredentials();
+bot.start(startCommand());
+bot.command('login', loginHandler());
+bot.command('bet', betHandler());
 
-  if (login === undefined || login.length === 0) {
-    ctx.reply('Введите логин и пароль через пробел');
-    return;
-  }
 
-  if (password === undefined) {
-    ctx.reply('Введите пароль');
-    return;
-  }
-
-  ctx.reply('Логигнимся');
-  
-  try {
-    const { data } = await loginReq(login, password);
-    const token = data.meta.token;
-    const decodedToken = jwt_decode(token);
-
-    const userInfoResponse = await getUserInfo(token, JSON.parse(decodedToken.sub).number);
-    const userNumber = userInfoResponse.data.result.number;
-
-    usersInfo[ctx.message.from.id] = {
-      token,
-      number: userNumber
-    };
-
-  } catch(e) {
-    console.log(e);
-    console.error(e.response);
-    ctx.reply('Произошла ошибка авторизации');
-    return;
-  }
-
-  ctx.reply('Успешно залогинен');
-});
-
+/*
 bot.command('makeBet', async (ctx) => {
-  
+
   const [_, search] = ctx.update.message.text.split('/makeBet ');
-  const {data} = await getEventListBySearch(search);
+  const { data } = await getEventListBySearch(search);
   console.log(search)
 
   const result = data.result[0];
   console.log(data)
   const event = result.events[0];
-  if(event) {
+  if (event) {
     const outcomesTupel = event.outcomes;
 
     const winLeftOutcome = Object.values(outcomesTupel).find((outcome) => outcome.outcomeKey === '_1');
@@ -82,18 +56,22 @@ bot.command('makeBet', async (ctx) => {
 
 bot.command('btn', (ctx) => {
   return ctx.reply('random example',
-    Markup.inlineKeyboard([[ Markup.button.callback('One', '1') ]])
+    Markup.inlineKeyboard([[Markup.button.callback('One', '1')]])
   )
 }
 )
+*/
 
-bot.on('inline_query', ({inlineQuery, telegram}) => {
+bot.on('inline_query', ({ inlineQuery, telegram }) => {
   telegram.answerInlineQuery(inlineQuery.id, `Some result ${inlineQuery.query}`);
 });
 
-bot.action(/^makeBet_(\d+)\-(\d+)/, (ctx) => {
+bot.action(/^bet:(\d+)\-(\d+)/, (ctx) => {
   console.log(ctx.match[1]);
   console.log(ctx.match[2]);
 });
 
 bot.launch();
+
+process.once('SIGINT', () => bot.stop('SIGINT'))
+process.once('SIGTERM', () => bot.stop('SIGTERM'))
