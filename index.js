@@ -26,42 +26,6 @@ bot.command('login', loginHandler());
 bot.command('bet', betHandler());
 
 
-/*
-bot.command('makeBet', async (ctx) => {
-
-  const [_, search] = ctx.update.message.text.split('/makeBet ');
-  const { data } = await getEventListBySearch(search);
-  console.log(search)
-
-  const result = data.result[0];
-  console.log(data)
-  const event = result.events[0];
-  if (event) {
-    const outcomesTupel = event.outcomes;
-
-    const winLeftOutcome = Object.values(outcomesTupel).find((outcome) => outcome.outcomeKey === '_1');
-    const drawOutcome = Object.values(outcomesTupel).find((outcome) => outcome.outcomeKey === 'x');
-    const winRightOutcome = Object.values(outcomesTupel).find((outcome) => outcome.outcomeKey === '_2');
-
-    ctx.reply(
-      'Выберите ставку',
-      Markup.inlineKeyboard([[
-        Markup.button.callback('Победа левых', `makeBet_${winLeftOutcome.id}-${winLeftOutcome.facId}`),
-        Markup.button.callback('Ничья', `makeBet_${drawOutcome.id}-${drawOutcome.facId}`),
-        Markup.button.callback('Победа правых', `makeBet_{winRightOutcome.id}-${winRightOutcome.facId}`)
-      ]])
-    )
-  }
-});
-
-bot.command('btn', (ctx) => {
-  return ctx.reply('random example',
-    Markup.inlineKeyboard([[Markup.button.callback('One', '1')]])
-  )
-}
-)
-*/
-
 bot.on('inline_query', ({ inlineQuery, telegram }) => {
   telegram.answerInlineQuery(inlineQuery.id, `Some result ${inlineQuery.query}`);
 });

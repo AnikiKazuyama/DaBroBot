@@ -1,5 +1,5 @@
 // eslint-disable-next-line no-console
-const debug = (data, name = 'DEBUG') => {
+const logError = (data, name = 'DEBUG') => {
   console.error(`${name} ${new Date()}`, JSON.stringify(data, null, '  '))
   return data
 }
@@ -10,8 +10,23 @@ const log = (data, name = 'LOG') => {
   return data
 }
 
-// eslint-disable-next-line no-console
-const errorHandler = (error) => debug(error)
+const isAuthenticated = (ctx) => {
+  const sessionAuthorizedMap = ctx.session['authorized-users'];
+  if (ctx.session
+    && ctx.session['authorized-users']
+    && ctx.session['authorized-users'][ctx.message.from.id]) {
+    const { token = null, userNumber = null } = ctx.session['authorized-users'][ctx.message.from.id]
+    return token && userNumber;
+  }
+  return false;
+}
+
+const echoError = (ctx, errorMessage = null) => {
+  ctx.reply(`¯\_(ツ)_/¯ Внутренняя ошибка. {${errorMessage}}`);
+}
+
+
+const errorHandler = (error) => error(error)
 
 const makeUserMention = ({
   id,
@@ -25,7 +40,9 @@ const makeUserMention = ({
 
 export {
   log,
-  debug,
+  logError,
   errorHandler,
-  makeUserMention
+  makeUserMention,
+  isAuthenticated,
+  echoError
 }

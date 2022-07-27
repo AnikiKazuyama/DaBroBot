@@ -1,4 +1,7 @@
 import { login } from './../requests/requests.js';
+import { log, logError, errorHandler, echoError } from './../helpers/index.js'
+
+const AUTH_USERS_SESSION_KEY = 'authenticated-users';
 
 export default () => async (ctx, next) => {
   const { message = {} } = ctx.update;
@@ -14,30 +17,38 @@ export default () => async (ctx, next) => {
     return;
   }
 
+  if (!ctx.session) {
+    echoError('Хранилище сессий не инициализировано');
+    return;
+  }
+
+  const authUsers = ctx.session[AUTH_USERS_SESSION_KEY];
+  if (!authUsers) {
+    ctx.session[AUTH_USERS_SESSION_KEY] = {};
+  }
+
   try {
     ctx.reply('Авторизация пользователя ...');
+
 
     const { data } = await login(login, password);
     const token = data?.meta?.token;
     const decodedToken = jwt_decode(token);
 
     const userInfoResponse = await getUserInfo(token, JSON.parse(decodedToken.sub).number);
-    const userNumber = userInfoResponse.data.result.number;
+    const { firstName = null, lastName = null, userNumber: userNumber = null } = userInfoResponse?.data?.result ?? {};
 
-    const sessionAuthorizedMap = ctx.session['authorized-users'];
-    if (!sessionAuthorizedMap) {
-      ctx.session['authorized-users'] = {};
-    }
-
-    ctx.session['authorized-users'][ctx.message.from.id] = {
+    ctx.session[AUTH_USERS_SESSION_KEY][ctx.message.from.id] = {
       token,
+      firstName,
+      lastName,
       number: userNumber
     };
 
     await ctx.deleteMessage(ctx.message.message_id)
-    ctx.reply('Авторизация прошла успешно.');
-
+    ctx.reply(`Добро пожаловать, ${firstName} ${lastName}. Авторизация прошла успешно.`);
   } catch (e) {
-    ctx.reply('Произошла ошибка авторизации.');
+    logError(e, 'loginHandler');
+    echoError('Ошибка авторизации.')
   }
 }

@@ -1,6 +1,6 @@
-import { debug } from './../helpers/index.js'
+import { logError } from './../helpers/index.js'
 
 export default () => async (ctx, next) => {
-  debug(ctx.update)
+  error(ctx.update)
   next(ctx)
 }
