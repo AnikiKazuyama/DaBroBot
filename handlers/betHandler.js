@@ -1,4 +1,38 @@
 import { getEventListBySearch } from './../requests/requests.js';
+import { logError, echoError } from './../utils/logger.js';
+
+function renderEventEntity(ctx, eventEntity) {
+  const {
+    team1 = null,
+    team2 = null,
+    gameDt = null,
+    status = null,
+    eventTitle = null,
+    expired = false,
+    tournamentTitle = null,
+    categoryTitle = null,
+  } = eventEntity;
+
+  const outcomes = eventEntity.outcomes;
+
+  const winLeftOutcome = Object.values(outcomes).find((outcome) => outcome.outcomeKey === '_1');
+  const drawOutcome = Object.values(outcomes).find((outcome) => outcome.outcomeKey === 'x');
+  const winRightOutcome = Object.values(outcomes).find((outcome) => outcome.outcomeKey === '_2');
+
+  if (!winLeftOutcome || !drawOutcome || !winRightOutcome) {
+    ctx.reply(
+      `Найдено событие:\n${tournamentTitle ?? ''}/${categoryTitle ?? ''}\nВыберите ставку`,
+      Markup.inlineKeyboard([[
+        Markup.button.callback(`Победа ${team1 ? team1 : 'левых'}`,
+          `bet:${winLeftOutcome.id}-${winLeftOutcome.facId}`),
+        Markup.button.callback('Ничья',
+          `bet:${drawOutcome.id}-${drawOutcome.facId}`),
+        Markup.button.callback(`Победа ${team2 ? team2 : 'правых'}`,
+          `bet:${winRightOutcome.id}-${winRightOutcome.facId}`)
+      ]])
+    )
+  }
+}
 
 export default () => async (ctx, next) => {
   const { message = {} } = ctx.update;
@@ -19,24 +53,33 @@ export default () => async (ctx, next) => {
 
     const [result] = data?.result;
     console.log(result)
-    const eventEntity = result.events[0];
+    let eventEntity = null;
 
-    if (eventEntity) {
-      const { team1, team2 } = eventEntity;
-      const outcomes = eventEntity.outcomes;
+    let eventsEntityIdx = 0;
+    for (eventEntity of result.events ?? []) {
+      const {
+        gameDt = null,
+        status = null,
+        eventTitle = null,
+        expired = false,
+        tournamentTitle = null,
+        categoryTitle = null,
+      } = eventEntity;
 
-      const winLeftOutcome = Object.values(outcomes).find((outcome) => outcome.outcomeKey === '_1');
-      const drawOutcome = Object.values(outcomes).find((outcome) => outcome.outcomeKey === 'x');
-      const winRightOutcome = Object.values(outcomes).find((outcome) => outcome.outcomeKey === '_2');
+      if (gameDt && status && eventTitle && !expired) {
+        break;
+      }
 
-      ctx.reply(
-        'Выберите ставку',
-        Markup.inlineKeyboard([[
-          Markup.button.callback(`Победа ${team1 ? team1 : 'левых'}`, `bet:${winLeftOutcome.id}-${winLeftOutcome.facId}`),
-          Markup.button.callback('Ничья', `bet:${drawOutcome.id}-${drawOutcome.facId}`),
-          Markup.button.callback(`Победа ${team2 ? team2 : 'правых'}`, `bet:{winRightOutcome.id}-${winRightOutcome.facId}`)
-        ]])
-      )
+      renderEventEntity(ctx, eventEntity);
+
+      eventEntity++;
+      if (eventsEntityIdx > 3) {
+        break
+      }
+    }
+
+    if (eventsEntityIdx === 0) {
+      throw new Error('Не найдено событий которые еще не завершились к данному моменту.');
     }
   } catch (e) {
     ctx.reply('Произошла ошибка поиска игрового события. Попробутйе уточнить ввод введя более точные названия команд.');

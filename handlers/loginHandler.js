@@ -18,7 +18,7 @@ export default () => async (ctx, next) => {
   }
 
   if (!ctx.session) {
-    echoError('Хранилище сессий не инициализировано');
+    echoError(ctx, 'Хранилище сессий не инициализировано');
     return;
   }
 
@@ -30,9 +30,11 @@ export default () => async (ctx, next) => {
   try {
     ctx.reply('Авторизация пользователя ...');
 
-
     const { data } = await login(login, password);
     const token = data?.meta?.token;
+    if (!token) {
+      throw new Error('Не удалось получить токен авторизации');
+    }
     const decodedToken = jwt_decode(token);
 
     const userInfoResponse = await getUserInfo(token, JSON.parse(decodedToken.sub).number);
@@ -49,6 +51,6 @@ export default () => async (ctx, next) => {
     ctx.reply(`Добро пожаловать, ${firstName} ${lastName}. Авторизация прошла успешно.`);
   } catch (e) {
     logError(e, 'loginHandler');
-    echoError('Ошибка авторизации.')
+    echoError(ctx, 'Ошибка авторизации.')
   }
 }
