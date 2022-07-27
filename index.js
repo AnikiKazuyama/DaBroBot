@@ -30,9 +30,8 @@ bot.on('inline_query', ({ inlineQuery, telegram }) => {
   telegram.answerInlineQuery(inlineQuery.id, `Some result ${inlineQuery.query}`);
 });
 
-bot.action(/^bet:(\d+)\-(\d+)/, (ctx) => {
-  console.log(ctx.match[1]);
-  console.log(ctx.match[2]);
+bot.action(/^bet:(\d+)\-(\d+):(\d+)/, (ctx) => {
+  console.log(`outcomeId: ${ctx.match[1]}, factId: ${ctx.match[2]}, betSum: ${ctx.match[3]}`);
 });
 
 bot.launch();
