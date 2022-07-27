@@ -23,11 +23,11 @@ function renderEventEntity(ctx, eventEntity) {
     ctx.reply(
       `Найдено событие:\n${tournamentTitle ?? ''}/${categoryTitle ?? ''}\nВыберите ставку`,
       Markup.inlineKeyboard([[
-        Markup.button.callback(`Победа ${team1 ? team1 : 'левых'}`,
+        Markup.button.callback(`Победа ${team1 ? team1 : 'левых'} (x${winLeftOutcome.value + ''})`,
           `bet:${winLeftOutcome.id}-${winLeftOutcome.facId}`),
-        Markup.button.callback('Ничья',
+        Markup.button.callback(`Ничья (x${drawOutcome.value + ''})`,
           `bet:${drawOutcome.id}-${drawOutcome.facId}`),
-        Markup.button.callback(`Победа ${team2 ? team2 : 'правых'}`,
+        Markup.button.callback(`Победа ${team2 ? team2 : 'правых'} (x${winRightOutcome.value + ''})`,
           `bet:${winRightOutcome.id}-${winRightOutcome.facId}`)
       ]])
     )
